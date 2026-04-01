@@ -44,7 +44,6 @@
     <script>
         // ========== НАСТРОЙКИ ==========
         const DEFAULT_STREAM_URL = "https://radio.radiodjboga.online/stream";
-        const DELAY_MS = 0; // Задержка 2 секунды
         // =================================
 
         const canvas = document.getElementById('visualizerCanvas');
@@ -61,11 +60,6 @@
         let dataArray = null;
         let canvasWidth = 400;
         let canvasHeight = 100;
-        
-        // Буфер для хранения данных с задержкой
-        let delayBuffer = [];
-        let currentDelay = 0;
-        let targetDelayFrames = 0;
 
         // Функции для вызова из Android
         window.startEqualizer = function() {
@@ -102,39 +96,6 @@
                 
                 if (dataArray) analyserNode.getByteFrequencyData(dataArray);
                 
-                // Сохраняем текущие данные в буфер задержки
-                if (dataArray) {
-                    const currentData = new Uint8Array(dataArray);
-                    delayBuffer.push(currentData);
-                    
-                    // Ограничиваем размер буфера
-                    const maxBufferSize = Math.floor(DELAY_MS / (1000 / 60)) + 10;
-                    while (delayBuffer.length > maxBufferSize) {
-                        delayBuffer.shift();
-                    }
-                }
-                
-                // Постепенно увеличиваем задержку до целевой
-                if (delayBuffer.length > 0) {
-                    if (currentDelay < targetDelayFrames && targetDelayFrames > 0) {
-                        currentDelay++;
-                    } else if (currentDelay > targetDelayFrames) {
-                        currentDelay--;
-                    }
-                }
-                
-                // Берем данные с текущей задержкой
-                let delayedData = dataArray; // по умолчанию текущие данные
-                if (delayBuffer.length > 0 && currentDelay > 0) {
-                    const delayIndex = Math.max(0, delayBuffer.length - 1 - currentDelay);
-                    if (delayBuffer[delayIndex]) {
-                        delayedData = delayBuffer[delayIndex];
-                    }
-                }
-                
-                // Используем задержанные данные для визуализации
-                const visualData = delayedData || dataArray;
-                
                 ctx.clearRect(0, 0, canvasWidth, canvasHeight);
                 
                 const barCount = 48;
@@ -153,8 +114,8 @@
                     let count = 0;
                     for (let j = 0; j < freqStep; j++) {
                         const idx = i * freqStep + j;
-                        if (idx < analyserNode.frequencyBinCount && visualData) {
-                            sum += visualData[idx] || 0;
+                        if (idx < analyserNode.frequencyBinCount) {
+                            sum += dataArray[idx] || 0;
                             count++;
                         }
                     }
@@ -198,12 +159,6 @@
                 
                 const bufferLength = analyserNode.frequencyBinCount;
                 dataArray = new Uint8Array(bufferLength);
-                
-                // Очищаем буфер задержки при новом подключении
-                delayBuffer = [];
-                currentDelay = 0;
-                // Целевая задержка в кадрах (при ~60fps)
-                targetDelayFrames = Math.floor(DELAY_MS / (1000 / 60));
                 
                 startVisualization();
                 return true;
@@ -253,7 +208,7 @@
                 await audioElement.play();
                 isPlaying = true;
                 
-                console.log("Playback started, delay will reach " + DELAY_MS + "ms gradually");
+                console.log("Playback started SYNC");
                 
             } catch (err) {
                 console.error(err);
@@ -278,11 +233,6 @@
             sourceNode = null;
             gainNode = null;
             isPlaying = false;
-            
-            // Очищаем буфер задержки
-            delayBuffer = [];
-            currentDelay = 0;
-            targetDelayFrames = 0;
             
             demoVisualization();
         }
