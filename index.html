@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Эквалайзер | Визуализатор аудио</title>
+    <title>Эквалайзер</title>
     <style>
         * {
             margin: 0;
@@ -12,7 +12,6 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             min-height: 100vh;
             display: flex;
@@ -23,203 +22,53 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 320px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 20px;
-            padding: 20px;
+            padding: 15px;
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
-        h1 {
-            text-align: center;
-            color: #fff;
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-        }
-
-        .player-controls {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        button {
-            background: linear-gradient(135deg, #ff6b6b, #ff4757);
-            border: none;
-            padding: 12px 24px;
-            border-radius: 50px;
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .stream-info {
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 20px;
-            text-align: center;
-            border-left: 3px solid #ff4757;
-        }
-
-        .stream-info p {
-            color: #fff;
-            font-size: 0.85rem;
-            opacity: 0.9;
-        }
-
-        .stream-info .label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #ff6b6b;
-            margin-bottom: 5px;
-        }
-
-        .stream-info .url-display {
-            font-family: monospace;
-            font-size: 0.8rem;
-            word-break: break-all;
-            color: #4cd964;
-        }
-
         .visualizer-container {
             background: rgba(0, 0, 0, 0.5);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
+            border-radius: 12px;
+            padding: 12px;
         }
 
         canvas {
             width: 100%;
-            height: 200px;
+            height: 100px;
             display: block;
             background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-        }
-
-        .status {
-            text-align: center;
-            color: #fff;
-            font-size: 0.85rem;
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 10px;
-        }
-
-        .status.error {
-            color: #ff6b6b;
-        }
-
-        .status.playing {
-            color: #4cd964;
-        }
-
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .volume-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #fff;
-        }
-
-        input[type="range"] {
-            width: 100px;
+            border-radius: 8px;
         }
 
         @media (max-width: 600px) {
             .container {
-                padding: 15px;
-            }
-            button {
-                padding: 10px 20px;
-                font-size: 0.9rem;
+                padding: 12px;
             }
             canvas {
-                height: 150px;
+                height: 80px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎵 Аудио Эквалайзер 🎵</h1>
-        
-        <div class="stream-info">
-            <p class="label">🔊 Аудиопоток (фиксированный)</p>
-            <p class="url-display" id="streamUrlDisplay">radio.radiodjboga.online/stream</p>
-        </div>
-
-        <div class="player-controls">
-            <button id="playBtn">▶ PLAY</button>
-            <button id="stopBtn">⏹ STOP</button>
-            <button id="testBtn" style="background: linear-gradient(135deg, #4cd964, #34c759);">🎵 ТЕСТ</button>
-        </div>
-
         <div class="visualizer-container">
             <canvas id="visualizerCanvas"></canvas>
         </div>
-
-        <div class="controls">
-            <div class="volume-control">
-                <span>🔊</span>
-                <input type="range" id="volumeControl" min="0" max="100" value="80">
-            </div>
-        </div>
-
-        <div class="status" id="statusText">⚡ Готов к воспроизведению</div>
     </div>
 
     <script>
-        // ========== НАСТРОЙКИ (ИЗМЕНЯЙТЕ ЗДЕСЬ) ==========
-        // 🔧 URL аудиопотока по умолчанию (можно изменить только здесь)
+        // ========== НАСТРОЙКИ ==========
         const DEFAULT_STREAM_URL = "https://radio.radiodjboga.online/stream";
-        
-        // 🔧 Альтернативные тестовые URL (раскомментируйте для использования)
-        // const DEFAULT_STREAM_URL = "https://streaming.radio.co/something/listen";
-        // const DEFAULT_STREAM_URL = "https://icecast.radio.uz/stream";
-        // =================================================
+        // =================================
 
-        // DOM элементы
-        const playBtn = document.getElementById('playBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const testBtn = document.getElementById('testBtn');
-        const volumeControl = document.getElementById('volumeControl');
         const canvas = document.getElementById('visualizerCanvas');
         const ctx = canvas.getContext('2d');
-        const statusSpan = document.getElementById('statusText');
-        const streamUrlDisplay = document.getElementById('streamUrlDisplay');
 
-        // Отображаем текущий URL
-        streamUrlDisplay.textContent = DEFAULT_STREAM_URL.replace(/^https?:\/\//, '');
-
-        // Аудио переменные
         let audioElement = null;
         let audioContext = null;
         let sourceNode = null;
@@ -227,27 +76,24 @@
         let gainNode = null;
         let animationId = null;
         let isPlaying = false;
-        let isTestMode = false;
         
-        // Переменные для визуализации
         let dataArray = null;
-        let canvasWidth = 800;
-        let canvasHeight = 200;
+        let canvasWidth = 320;
+        let canvasHeight = 100;
 
-        // Функция обновления статуса
-        function updateStatus(message, type = 'info') {
-            statusSpan.textContent = message;
-            statusSpan.className = 'status';
-            if (type === 'error') statusSpan.classList.add('error');
-            if (type === 'playing') statusSpan.classList.add('playing');
-            console.log(message);
-        }
+        // Функции для вызова из Android приложения
+        window.startEqualizer = function() {
+            startPlayback();
+        };
 
-        // Функция изменения размера canvas
+        window.stopEqualizer = function() {
+            stopPlayback();
+        };
+
         function resizeCanvas() {
             const container = canvas.parentElement;
-            canvas.width = container.clientWidth - 40;
-            canvas.height = 200;
+            canvas.width = container.clientWidth - 24;
+            canvas.height = 100;
             canvasWidth = canvas.width;
             canvasHeight = canvas.height;
             
@@ -257,7 +103,6 @@
             }
         }
 
-        // Функция визуализации (ЭКВАЛАЙЗЕР)
         function startVisualization() {
             if (animationId) cancelAnimationFrame(animationId);
             
@@ -271,33 +116,47 @@
                 
                 ctx.clearRect(0, 0, canvasWidth, canvasHeight);
                 
-                const barCount = Math.min(analyserNode.frequencyBinCount, 128);
+                // 64 столбца
+                const barCount = 64;
                 const barWidth = canvasWidth / barCount;
                 
-                // Создание градиента для полос
                 const gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
                 gradient.addColorStop(0, '#ff6b6b');
                 gradient.addColorStop(0.3, '#ffa502');
                 gradient.addColorStop(0.6, '#4cd964');
                 gradient.addColorStop(1, '#5ac8fa');
                 
+                // Группируем частоты для 64 столбцов
+                const freqStep = Math.floor(analyserNode.frequencyBinCount / barCount);
+                
                 for (let i = 0; i < barCount; i++) {
-                    let value = dataArray[i] || 0;
+                    // Усредняем значения частот
+                    let sum = 0;
+                    let count = 0;
+                    for (let j = 0; j < freqStep; j++) {
+                        const idx = i * freqStep + j;
+                        if (idx < analyserNode.frequencyBinCount) {
+                            sum += dataArray[idx] || 0;
+                            count++;
+                        }
+                    }
+                    let value = count > 0 ? sum / count : 0;
+                    
                     let percent = value / 255;
-                    let barHeight = Math.max(3, percent * canvasHeight * 0.9);
+                    let barHeight = Math.max(2, percent * canvasHeight * 0.85);
                     const x = i * barWidth;
                     const w = barWidth - 1;
                     const y = canvasHeight - barHeight;
                     
                     ctx.fillStyle = gradient;
-                    ctx.shadowBlur = 4;
+                    ctx.shadowBlur = 3;
                     ctx.shadowColor = 'rgba(0,0,0,0.5)';
                     ctx.fillRect(x, y, w, barHeight);
                     
-                    // Добавление эффекта свечения
+                    // Добавление эффекта свечения для высоких значений
                     if (percent > 0.7) {
                         ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                        ctx.fillRect(x, y, w, Math.min(barHeight, 4));
+                        ctx.fillRect(x, y, w, Math.min(barHeight, 3));
                     }
                 }
                 ctx.shadowBlur = 0;
@@ -308,9 +167,7 @@
             draw();
         }
 
-        // Функция создания аудио контекста
         async function initWebAudio() {
-            gainNode.gain.value = 0; // Всегда 0
             if (!audioElement) return false;
             
             if (audioContext && audioContext.state !== 'closed') {
@@ -324,7 +181,7 @@
                 analyserNode.fftSize = 256;
                 analyserNode.smoothingTimeConstant = 0.6;
                 gainNode = audioContext.createGain();
-                gainNode.gain.value = volumeControl.value / 100;
+                gainNode.gain.value = 0;
                 
                 sourceNode.connect(analyserNode);
                 analyserNode.connect(gainNode);
@@ -336,41 +193,43 @@
                 startVisualization();
                 return true;
             } catch (error) {
-                console.error("Web Audio ошибка:", error);
-                updateStatus('Ошибка инициализации аудио: ' + error.message, 'error');
+                console.error(error);
                 return false;
             }
         }
 
-        // Функция воспроизведения основного потока
-        async function startMainPlayback() {
+        async function startPlayback() {
             try {
-                stopPlayback();
-                isTestMode = false;
+                if (audioElement) {
+                    audioElement.pause();
+                    audioElement.src = '';
+                }
                 
-                updateStatus('🔌 Подключение к потоку...');
+                if (audioContext) {
+                    if (animationId) cancelAnimationFrame(animationId);
+                    await audioContext.close();
+                    audioContext = null;
+                }
                 
                 audioElement = new Audio();
                 audioElement.crossOrigin = 'anonymous';
-                
                 audioElement.src = DEFAULT_STREAM_URL;
                 audioElement.preload = 'auto';
                 
                 await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => reject(new Error('Таймаут загрузки потока')), 15000);
+                    const timeout = setTimeout(() => reject(new Error('Timeout')), 15000);
                     audioElement.addEventListener('canplay', () => {
                         clearTimeout(timeout);
                         resolve();
                     }, { once: true });
-                    audioElement.addEventListener('error', (e) => {
+                    audioElement.addEventListener('error', () => {
                         clearTimeout(timeout);
-                        reject(new Error('Ошибка загрузки потока. Проверьте URL или подключение к интернету'));
+                        reject(new Error('Error'));
                     }, { once: true });
                     audioElement.load();
                 });
                 
-                const webAudioOk = await initWebAudio();
-                if (!webAudioOk) throw new Error('Не удалось инициализировать аудио');
+                await initWebAudio();
                 
                 if (audioContext && audioContext.state === 'suspended') {
                     await audioContext.resume();
@@ -378,67 +237,15 @@
                 
                 await audioElement.play();
                 isPlaying = true;
-                playBtn.disabled = true;
-                testBtn.disabled = true;
-                stopBtn.disabled = false;
-                updateStatus(`▶ Играет: ${DEFAULT_STREAM_URL.replace(/^https?:\/\//, '')} | Эквалайзер активен`, 'playing');
                 
             } catch (err) {
                 console.error(err);
-                updateStatus('❌ Ошибка: ' + err.message, 'error');
                 stopPlayback();
             }
         }
 
-        // Функция тестового воспроизведения
-        async function startTestPlayback() {
-            try {
-                stopPlayback();
-                isTestMode = true;
-                
-                updateStatus('🎵 Тестовый режим (синусоида 440Hz)');
-                
-                const testContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = testContext.createOscillator();
-                const testGain = testContext.createGain();
-                analyserNode = testContext.createAnalyser();
-                analyserNode.fftSize = 256;
-                analyserNode.smoothingTimeConstant = 0.6;
-                
-                oscillator.connect(analyserNode);
-                analyserNode.connect(testGain);
-                testGain.connect(testContext.destination);
-                
-                oscillator.type = 'sine';
-                oscillator.frequency.value = 440;
-                testGain.gain.value = 0.3;
-                
-                await testContext.resume();
-                oscillator.start();
-                
-                audioContext = testContext;
-                sourceNode = oscillator;
-                gainNode = testGain;
-                
-                const bufferLength = analyserNode.frequencyBinCount;
-                dataArray = new Uint8Array(bufferLength);
-                startVisualization();
-                isPlaying = true;
-                playBtn.disabled = true;
-                testBtn.disabled = true;
-                stopBtn.disabled = false;
-                updateStatus('🎵 Тестовый тон (440Hz) | Эквалайзер активен', 'playing');
-                
-            } catch (err) {
-                console.error(err);
-                updateStatus('❌ Ошибка тестового режима: ' + err.message, 'error');
-                stopPlayback();
-            }
-        }
-
-        // Функция остановки воспроизведения
         function stopPlayback() {
-            if (audioElement && !isTestMode) {
+            if (audioElement) {
                 audioElement.pause();
                 audioElement.src = '';
                 audioElement = null;
@@ -454,19 +261,10 @@
             sourceNode = null;
             gainNode = null;
             isPlaying = false;
-            isTestMode = false;
             
-            playBtn.disabled = false;
-            testBtn.disabled = false;
-            stopBtn.disabled = true;
-            
-            updateStatus('⏹ Остановлено');
-            
-            // Запускаем демо-визуализацию
             demoVisualization();
         }
 
-        // Демо визуализация (когда ничего не играет)
         function demoVisualization() {
             let demoActive = true;
             
@@ -475,20 +273,21 @@
                 
                 ctx.clearRect(0, 0, canvasWidth, canvasHeight);
                 
+                // Демо-визуализация также с 64 столбцами
                 const barCount = 64;
                 const time = Date.now() * 0.005;
                 const barWidth = canvasWidth / barCount;
                 
                 for (let i = 0; i < barCount; i++) {
-                    let fakeHeight = 30 + Math.sin(time + i * 0.2) * 25;
-                    fakeHeight = Math.min(canvasHeight * 0.7, Math.max(8, fakeHeight));
+                    let fakeHeight = 20 + Math.sin(time + i * 0.15) * 15;
+                    fakeHeight = Math.min(canvasHeight * 0.7, Math.max(5, fakeHeight));
                     const x = i * barWidth;
                     const w = barWidth - 1;
                     const y = canvasHeight - fakeHeight;
                     
-                    const hue = (i * 5 + time * 50) % 360;
+                    const hue = (i * 8 + time * 50) % 360;
                     ctx.fillStyle = `hsl(${hue}, 70%, 55%)`;
-                    ctx.shadowBlur = 3;
+                    ctx.shadowBlur = 2;
                     ctx.fillRect(x, y, w, fakeHeight);
                 }
                 ctx.shadowBlur = 0;
@@ -499,23 +298,11 @@
             drawDemo();
         }
 
-
-        // События
-        playBtn.addEventListener('click', () => {
-            startMainPlayback();
-        });
-        
-        stopBtn.addEventListener('click', stopPlayback);
-        testBtn.addEventListener('click', startTestPlayback);
-        volumeControl.addEventListener('input', updateVolume);
         window.addEventListener('resize', () => setTimeout(resizeCanvas, 100));
         
-        // Инициализация
         resizeCanvas();
         demoVisualization();
-        updateStatus('✅ Эквалайзер готов | Нажмите PLAY для прослушивания потока или ТЕСТ');
         
-        // Очистка при закрытии
         window.addEventListener('beforeunload', () => {
             if (audioElement) {
                 audioElement.pause();
