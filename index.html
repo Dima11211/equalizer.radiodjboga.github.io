@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Эквалайзер онлайн - RADIO DJ BOGA</title>
+    <title>Эквалайзер | Визуализатор аудио</title>
     <style>
         * {
             margin: 0;
@@ -12,319 +12,523 @@
         }
 
         body {
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        .equalizer-container {
+        .container {
             width: 100%;
-            max-width: 1200px;
-            background: rgba(0, 0, 0, 0.5);
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 20px;
             padding: 20px;
             backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .player-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #ff6b6b, #ff4757);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stream-info {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            border-left: 3px solid #ff4757;
+        }
+
+        .stream-info p {
+            color: #fff;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .stream-info .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ff6b6b;
+            margin-bottom: 5px;
+        }
+
+        .stream-info .url-display {
+            font-family: monospace;
+            font-size: 0.8rem;
+            word-break: break-all;
+            color: #4cd964;
+        }
+
+        .visualizer-container {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
         }
 
         canvas {
             width: 100%;
-            height: 300px;
+            height: 200px;
             display: block;
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 12px;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 0 20px rgba(0,255,255,0.2);
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
         }
 
-        .status-bar {
-            margin-top: 20px;
+        .status {
+            text-align: center;
+            color: #fff;
+            font-size: 0.85rem;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+        }
+
+        .status.error {
+            color: #ff6b6b;
+        }
+
+        .status.playing {
+            color: #4cd964;
+        }
+
+        .controls {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-            color: #ccc;
-            font-size: 14px;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
         }
 
-        .status-text {
-            background: rgba(0,0,0,0.6);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-family: monospace;
-            letter-spacing: 1px;
-        }
-
-        .connection-status {
+        .volume-control {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            color: #fff;
         }
 
-        .led {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background-color: #ff4444;
-            box-shadow: 0 0 5px #ff4444;
-            transition: all 0.3s ease;
+        input[type="range"] {
+            width: 100px;
         }
 
-        .led.active {
-            background-color: #44ff44;
-            box-shadow: 0 0 8px #44ff44;
-        }
-
-        button {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            padding: 6px 15px;
-            border-radius: 20px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 12px;
-        }
-
-        button:hover {
-            background: rgba(255,255,255,0.2);
-            transform: scale(1.02);
-        }
-
-        @media (max-width: 768px) {
-            .equalizer-container { padding: 15px; }
-            canvas { height: 200px; }
-            .status-bar { font-size: 10px; }
-        }
-        @media (max-width: 480px) {
-            canvas { height: 150px; }
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            button {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+            canvas {
+                height: 150px;
+            }
         }
     </style>
 </head>
 <body>
-<div class="equalizer-container">
-    <canvas id="visualizerCanvas"></canvas>
-
-    <div class="status-bar">
-        <div class="connection-status">
-            <div class="led" id="ledIndicator"></div>
-            <span id="connectionText">Отключено</span>
+    <div class="container">
+        <h1>🎵 Аудио Эквалайзер 🎵</h1>
+        
+        <div class="stream-info">
+            <p class="label">🔊 Аудиопоток (фиксированный)</p>
+            <p class="url-display" id="streamUrlDisplay">radio.radiodjboga.online/stream</p>
         </div>
-        <div class="status-text" id="streamInfo">RADIO DJ BOGA | Ожидание потока...</div>
-        <button id="reconnectBtn">⟳ Переподключить</button>
+
+        <div class="player-controls">
+            <button id="playBtn">▶ PLAY</button>
+            <button id="stopBtn">⏹ STOP</button>
+            <button id="testBtn" style="background: linear-gradient(135deg, #4cd964, #34c759);">🎵 ТЕСТ</button>
+        </div>
+
+        <div class="visualizer-container">
+            <canvas id="visualizerCanvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="volume-control">
+                <span>🔊</span>
+                <input type="range" id="volumeControl" min="0" max="100" value="80">
+            </div>
+        </div>
+
+        <div class="status" id="statusText">⚡ Готов к воспроизведению</div>
     </div>
-</div>
 
-<script>
-    // === Конфигурация ===
-    const STREAM_URL = "https://radio.radiodjboga.online:8000/stream";
-    // ===================
+    <script>
+        // ========== НАСТРОЙКИ (ИЗМЕНЯЙТЕ ЗДЕСЬ) ==========
+        // 🔧 URL аудиопотока по умолчанию (можно изменить только здесь)
+        const DEFAULT_STREAM_URL = "https://radio.radiodjboga.online/stream";
+        
+        // 🔧 Альтернативные тестовые URL (раскомментируйте для использования)
+        // const DEFAULT_STREAM_URL = "https://streaming.radio.co/something/listen";
+        // const DEFAULT_STREAM_URL = "https://icecast.radio.uz/stream";
+        // =================================================
 
-    const canvas = document.getElementById('visualizerCanvas');
-    const ctx = canvas.getContext('2d');
-    const ledIndicator = document.getElementById('ledIndicator');
-    const connectionTextSpan = document.getElementById('connectionText');
-    const streamInfoSpan = document.getElementById('streamInfo');
-    const reconnectBtn = document.getElementById('reconnectBtn');
+        // DOM элементы
+        const playBtn = document.getElementById('playBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const testBtn = document.getElementById('testBtn');
+        const volumeControl = document.getElementById('volumeControl');
+        const canvas = document.getElementById('visualizerCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusSpan = document.getElementById('statusText');
+        const streamUrlDisplay = document.getElementById('streamUrlDisplay');
 
-    let audioContext = null;
-    let mediaSource = null;
-    let sourceNode = null;
-    let analyserNode = null;
-    let animationId = null;
-    let isConnected = false;
+        // Отображаем текущий URL
+        streamUrlDisplay.textContent = DEFAULT_STREAM_URL.replace(/^https?:\/\//, '');
 
-    let canvasWidth = 800, canvasHeight = 300;
-    let dataArray = null;
-    let reconnectAttempts = 0;
+        // Аудио переменные
+        let audioElement = null;
+        let audioContext = null;
+        let sourceNode = null;
+        let analyserNode = null;
+        let gainNode = null;
+        let animationId = null;
+        let isPlaying = false;
+        let isTestMode = false;
+        
+        // Переменные для визуализации
+        let dataArray = null;
+        let canvasWidth = 800;
+        let canvasHeight = 200;
 
-    // Функция изменения размера canvas
-    function resizeCanvas() {
-        const container = canvas.parentElement;
-        canvas.width = container.clientWidth - 40;
-        canvas.height = window.innerWidth > 768 ? 300 : (window.innerWidth > 480 ? 200 : 150);
-        canvasWidth = canvas.width;
-        canvasHeight = canvas.height;
-        if (analyserNode) {
-            dataArray = new Uint8Array(analyserNode.frequencyBinCount);
-        }
-    }
-
-    // Обновление UI статуса
-    function updateStatus(isActive, message = "") {
-        isConnected = isActive;
-        if (isActive) {
-            ledIndicator.classList.add('active');
-            connectionTextSpan.innerText = message || "Подключено";
-            streamInfoSpan.innerText = "RADIO DJ BOGA | Анализ аудиопотока";
-        } else {
-            ledIndicator.classList.remove('active');
-            connectionTextSpan.innerText = message || "Отключено";
-            streamInfoSpan.innerText = "RADIO DJ BOGA | Ожидание потока...";
-        }
-    }
-
-    // Отрисовка эквалайзера (на основе реальных данных)
-    function drawVisualizer() {
-        if (!analyserNode || !ctx || !dataArray) {
-            drawDemoMode();
-            animationId = requestAnimationFrame(drawVisualizer);
-            return;
+        // Функция обновления статуса
+        function updateStatus(message, type = 'info') {
+            statusSpan.textContent = message;
+            statusSpan.className = 'status';
+            if (type === 'error') statusSpan.classList.add('error');
+            if (type === 'playing') statusSpan.classList.add('playing');
+            console.log(message);
         }
 
-        analyserNode.getByteFrequencyData(dataArray);
-        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-
-        const barCount = analyserNode.frequencyBinCount;
-        const step = Math.max(1, Math.floor(barCount / 80)); // Ограничиваем кол-во полос для производительности
-        let drawnBars = 0;
-        let maxBarWidth = canvasWidth / Math.min(barCount, 80);
-
-        for (let i = 0; i < barCount; i += step) {
-            let value = dataArray[i] || 0;
-            let percent = value / 255;
-            let barHeight = Math.max(3, percent * canvasHeight * 0.85);
-
-            const x = drawnBars * maxBarWidth;
-            const w = maxBarWidth - 1;
-            const y = canvasHeight - barHeight;
-
-            // Градиент в зависимости от уровня
-            const gradient = ctx.createLinearGradient(x, y, x + w, canvasHeight);
-            if (percent > 0.7) {
-                gradient.addColorStop(0, '#ff3366');
-                gradient.addColorStop(1, '#ff6633');
-            } else if (percent > 0.3) {
-                gradient.addColorStop(0, '#33ff66');
-                gradient.addColorStop(1, '#33ff99');
-            } else {
-                gradient.addColorStop(0, '#33ccff');
-                gradient.addColorStop(1, '#33aaff');
+        // Функция изменения размера canvas
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth - 40;
+            canvas.height = 200;
+            canvasWidth = canvas.width;
+            canvasHeight = canvas.height;
+            
+            if (analyserNode) {
+                const bufferLength = analyserNode.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
             }
-
-            ctx.fillStyle = gradient;
-            ctx.shadowBlur = 4;
-            ctx.shadowColor = `rgba(0,255,200,${percent * 0.6})`;
-            ctx.fillRect(x, y, w, barHeight);
-            drawnBars++;
-        }
-        ctx.shadowBlur = 0;
-
-        animationId = requestAnimationFrame(drawVisualizer);
-    }
-
-    // Демо-режим (пока нет потока)
-    function drawDemoMode() {
-        if (isConnected) return;
-
-        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-        const time = Date.now() * 0.005;
-        const barCount = 48;
-        const barWidth = canvasWidth / barCount;
-
-        for (let i = 0; i < barCount; i++) {
-            let fakeHeight = 20 + Math.sin(time + i * 0.2) * 15;
-            fakeHeight = Math.min(canvasHeight * 0.5, Math.max(5, fakeHeight));
-            const x = i * barWidth;
-            const w = barWidth - 1;
-            const y = canvasHeight - fakeHeight;
-
-            ctx.fillStyle = `rgba(100, 150, 255, ${0.4 + Math.sin(time + i) * 0.2})`;
-            ctx.fillRect(x, y, w, fakeHeight);
-        }
-    }
-
-    // Инициализация аудио-контекста и подключение к потоку без воспроизведения
-    async function initSilentStream() {
-        if (audioContext) {
-            await audioContext.close();
-            audioContext = null;
         }
 
-        try {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyserNode = audioContext.createAnalyser();
-            analyserNode.fftSize = 256;
-            analyserNode.smoothingTimeConstant = 0.65;
+        // Функция визуализации (ЭКВАЛАЙЗЕР)
+        function startVisualization() {
+            if (animationId) cancelAnimationFrame(animationId);
+            
+            function draw() {
+                if (!analyserNode || !ctx) {
+                    animationId = requestAnimationFrame(draw);
+                    return;
+                }
+                
+                if (dataArray) analyserNode.getByteFrequencyData(dataArray);
+                
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                
+                const barCount = Math.min(analyserNode.frequencyBinCount, 128);
+                const barWidth = canvasWidth / barCount;
+                
+                // Создание градиента для полос
+                const gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+                gradient.addColorStop(0, '#ff6b6b');
+                gradient.addColorStop(0.3, '#ffa502');
+                gradient.addColorStop(0.6, '#4cd964');
+                gradient.addColorStop(1, '#5ac8fa');
+                
+                for (let i = 0; i < barCount; i++) {
+                    let value = dataArray[i] || 0;
+                    let percent = value / 255;
+                    let barHeight = Math.max(3, percent * canvasHeight * 0.9);
+                    const x = i * barWidth;
+                    const w = barWidth - 1;
+                    const y = canvasHeight - barHeight;
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.shadowBlur = 4;
+                    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                    ctx.fillRect(x, y, w, barHeight);
+                    
+                    // Добавление эффекта свечения
+                    if (percent > 0.7) {
+                        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                        ctx.fillRect(x, y, w, Math.min(barHeight, 4));
+                    }
+                }
+                ctx.shadowBlur = 0;
+                
+                animationId = requestAnimationFrame(draw);
+            }
+            
+            draw();
+        }
 
-            // Создаем элемент Audio, но не подключаем к динамикам
-            const audioElement = new Audio();
-            audioElement.crossOrigin = "anonymous";
-            audioElement.src = STREAM_URL;
-            audioElement.autoplay = true;
-            audioElement.muted = true; // КЛЮЧЕВОЙ МОМЕНТ: звук отключен, но данные идут
+        // Функция создания аудио контекста
+        async function initWebAudio() {
+            if (!audioElement) return false;
+            
+            if (audioContext && audioContext.state !== 'closed') {
+                try { await audioContext.close(); } catch(e) {}
+            }
+            
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                sourceNode = audioContext.createMediaElementSource(audioElement);
+                analyserNode = audioContext.createAnalyser();
+                analyserNode.fftSize = 256;
+                analyserNode.smoothingTimeConstant = 0.6;
+                gainNode = audioContext.createGain();
+                gainNode.gain.value = volumeControl.value / 100;
+                
+                sourceNode.connect(analyserNode);
+                analyserNode.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                const bufferLength = analyserNode.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                
+                startVisualization();
+                return true;
+            } catch (error) {
+                console.error("Web Audio ошибка:", error);
+                updateStatus('Ошибка инициализации аудио: ' + error.message, 'error');
+                return false;
+            }
+        }
 
-            // Ждем, пока поток начнет загружаться
-            await new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => reject(new Error("Таймаут подключения")), 10000);
-                audioElement.addEventListener('canplaythrough', () => {
-                    clearTimeout(timeout);
-                    resolve();
-                }, { once: true });
-                audioElement.addEventListener('error', (e) => {
-                    clearTimeout(timeout);
-                    reject(e);
+        // Функция воспроизведения основного потока
+        async function startMainPlayback() {
+            try {
+                stopPlayback();
+                isTestMode = false;
+                
+                updateStatus('🔌 Подключение к потоку...');
+                
+                audioElement = new Audio();
+                audioElement.crossOrigin = 'anonymous';
+                
+                audioElement.src = DEFAULT_STREAM_URL;
+                audioElement.preload = 'auto';
+                
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('Таймаут загрузки потока')), 15000);
+                    audioElement.addEventListener('canplay', () => {
+                        clearTimeout(timeout);
+                        resolve();
+                    }, { once: true });
+                    audioElement.addEventListener('error', (e) => {
+                        clearTimeout(timeout);
+                        reject(new Error('Ошибка загрузки потока. Проверьте URL или подключение к интернету'));
+                    }, { once: true });
+                    audioElement.load();
                 });
-                audioElement.load();
-            });
-
-            // Подключаем audio элемент к Web Audio для анализа
-            sourceNode = audioContext.createMediaElementSource(audioElement);
-            sourceNode.connect(analyserNode);
-            // НЕ подключаем analyserNode к destination (колонкам) → звука нет
-
-            if (audioContext.state === 'suspended') {
-                await audioContext.resume();
+                
+                const webAudioOk = await initWebAudio();
+                if (!webAudioOk) throw new Error('Не удалось инициализировать аудио');
+                
+                if (audioContext && audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+                
+                await audioElement.play();
+                isPlaying = true;
+                playBtn.disabled = true;
+                testBtn.disabled = true;
+                stopBtn.disabled = false;
+                updateStatus(`▶ Играет: ${DEFAULT_STREAM_URL.replace(/^https?:\/\//, '')} | Эквалайзер активен`, 'playing');
+                
+            } catch (err) {
+                console.error(err);
+                updateStatus('❌ Ошибка: ' + err.message, 'error');
+                stopPlayback();
             }
-
-            dataArray = new Uint8Array(analyserNode.frequencyBinCount);
-            updateStatus(true, "Поток активен");
-            reconnectAttempts = 0;
-
-            // Обработка ошибок потока
-            audioElement.onerror = () => {
-                updateStatus(false, "Ошибка потока");
-                setTimeout(() => initSilentStream(), 5000);
-            };
-            audioElement.onended = () => {
-                updateStatus(false, "Поток остановлен");
-                setTimeout(() => initSilentStream(), 3000);
-            };
-
-        } catch (err) {
-            console.error("Ошибка подключения:", err);
-            updateStatus(false, "Ошибка: " + err.message);
-            setTimeout(() => initSilentStream(), 8000);
         }
-    }
 
-    // Обработчик кнопки переподключения
-    reconnectBtn.addEventListener('click', () => {
-        updateStatus(false, "Переподключение...");
-        if (audioContext) audioContext.close().catch(e => {});
-        initSilentStream();
-    });
+        // Функция тестового воспроизведения
+        async function startTestPlayback() {
+            try {
+                stopPlayback();
+                isTestMode = true;
+                
+                updateStatus('🎵 Тестовый режим (синусоида 440Hz)');
+                
+                const testContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = testContext.createOscillator();
+                const testGain = testContext.createGain();
+                analyserNode = testContext.createAnalyser();
+                analyserNode.fftSize = 256;
+                analyserNode.smoothingTimeConstant = 0.6;
+                
+                oscillator.connect(analyserNode);
+                analyserNode.connect(testGain);
+                testGain.connect(testContext.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 440;
+                testGain.gain.value = 0.3;
+                
+                await testContext.resume();
+                oscillator.start();
+                
+                audioContext = testContext;
+                sourceNode = oscillator;
+                gainNode = testGain;
+                
+                const bufferLength = analyserNode.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                startVisualization();
+                isPlaying = true;
+                playBtn.disabled = true;
+                testBtn.disabled = true;
+                stopBtn.disabled = false;
+                updateStatus('🎵 Тестовый тон (440Hz) | Эквалайзер активен', 'playing');
+                
+            } catch (err) {
+                console.error(err);
+                updateStatus('❌ Ошибка тестового режима: ' + err.message, 'error');
+                stopPlayback();
+            }
+        }
 
-    // Обработка resize
-    window.addEventListener('resize', () => {
+        // Функция остановки воспроизведения
+        function stopPlayback() {
+            if (audioElement && !isTestMode) {
+                audioElement.pause();
+                audioElement.src = '';
+                audioElement = null;
+            }
+            
+            if (audioContext && audioContext.state !== 'closed') {
+                if (animationId) cancelAnimationFrame(animationId);
+                audioContext.close().catch(e => console.log(e));
+                audioContext = null;
+            }
+            
+            analyserNode = null;
+            sourceNode = null;
+            gainNode = null;
+            isPlaying = false;
+            isTestMode = false;
+            
+            playBtn.disabled = false;
+            testBtn.disabled = false;
+            stopBtn.disabled = true;
+            
+            updateStatus('⏹ Остановлено');
+            
+            // Запускаем демо-визуализацию
+            demoVisualization();
+        }
+
+        // Демо визуализация (когда ничего не играет)
+        function demoVisualization() {
+            let demoActive = true;
+            
+            function drawDemo() {
+                if (isPlaying || !demoActive) return;
+                
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                
+                const barCount = 64;
+                const time = Date.now() * 0.005;
+                const barWidth = canvasWidth / barCount;
+                
+                for (let i = 0; i < barCount; i++) {
+                    let fakeHeight = 30 + Math.sin(time + i * 0.2) * 25;
+                    fakeHeight = Math.min(canvasHeight * 0.7, Math.max(8, fakeHeight));
+                    const x = i * barWidth;
+                    const w = barWidth - 1;
+                    const y = canvasHeight - fakeHeight;
+                    
+                    const hue = (i * 5 + time * 50) % 360;
+                    ctx.fillStyle = `hsl(${hue}, 70%, 55%)`;
+                    ctx.shadowBlur = 3;
+                    ctx.fillRect(x, y, w, fakeHeight);
+                }
+                ctx.shadowBlur = 0;
+                
+                requestAnimationFrame(drawDemo);
+            }
+            
+            drawDemo();
+        }
+
+        // Обработчик изменения громкости
+        function updateVolume() {
+            if (gainNode) {
+                gainNode.gain.value = 0; // Всегда без звука
+                updateStatus(`Громкость: ${volumeControl.value}%`);
+            }
+        }
+
+        // События
+        playBtn.addEventListener('click', () => {
+            startMainPlayback();
+        });
+        
+        stopBtn.addEventListener('click', stopPlayback);
+        testBtn.addEventListener('click', startTestPlayback);
+        volumeControl.addEventListener('input', updateVolume);
+        window.addEventListener('resize', () => setTimeout(resizeCanvas, 100));
+        
+        // Инициализация
         resizeCanvas();
-    });
-
-    // Запуск
-    resizeCanvas();
-    initSilentStream();
-    drawVisualizer();
-
-    // Чистка при закрытии
-    window.addEventListener('beforeunload', () => {
-        if (audioContext) audioContext.close();
-        if (animationId) cancelAnimationFrame(animationId);
-    });
-</script>
+        demoVisualization();
+        updateStatus('✅ Эквалайзер готов | Нажмите PLAY для прослушивания потока или ТЕСТ');
+        
+        // Очистка при закрытии
+        window.addEventListener('beforeunload', () => {
+            if (audioElement) {
+                audioElement.pause();
+                audioElement.src = '';
+            }
+            if (audioContext) audioContext.close();
+        });
+    </script>
 </body>
 </html>
