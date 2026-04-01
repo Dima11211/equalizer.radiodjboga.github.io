@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Эквалайзер</title>
     <style>
         * {
@@ -12,53 +12,33 @@
         }
 
         body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
+            background: transparent;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 0;
+            margin: 0;
         }
 
         .container {
             width: 100%;
-            max-width: 320px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 15px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-
-        .visualizer-container {
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.3);
             border-radius: 12px;
-            padding: 12px;
+            padding: 8px;
         }
 
         canvas {
             width: 100%;
             height: 100px;
             display: block;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.2);
             border-radius: 8px;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 12px;
-            }
-            canvas {
-                height: 80px;
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="visualizer-container">
-            <canvas id="visualizerCanvas"></canvas>
-        </div>
+        <canvas id="visualizerCanvas"></canvas>
     </div>
 
     <script>
@@ -78,21 +58,23 @@
         let isPlaying = false;
         
         let dataArray = null;
-        let canvasWidth = 320;
+        let canvasWidth = 400;
         let canvasHeight = 100;
 
-        // Функции для вызова из Android приложения
+        // Функции для вызова из Android
         window.startEqualizer = function() {
+            console.log("startEqualizer called from Android");
             startPlayback();
         };
 
         window.stopEqualizer = function() {
+            console.log("stopEqualizer called from Android");
             stopPlayback();
         };
 
         function resizeCanvas() {
             const container = canvas.parentElement;
-            canvas.width = container.clientWidth - 24;
+            canvas.width = container.clientWidth - 16;
             canvas.height = 100;
             canvasWidth = canvas.width;
             canvasHeight = canvas.height;
@@ -116,8 +98,7 @@
                 
                 ctx.clearRect(0, 0, canvasWidth, canvasHeight);
                 
-                // 64 столбца
-                const barCount = 64;
+                const barCount = 48;
                 const barWidth = canvasWidth / barCount;
                 
                 const gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
@@ -126,11 +107,9 @@
                 gradient.addColorStop(0.6, '#4cd964');
                 gradient.addColorStop(1, '#5ac8fa');
                 
-                // Группируем частоты для 64 столбцов
                 const freqStep = Math.floor(analyserNode.frequencyBinCount / barCount);
                 
                 for (let i = 0; i < barCount; i++) {
-                    // Усредняем значения частот
                     let sum = 0;
                     let count = 0;
                     for (let j = 0; j < freqStep; j++) {
@@ -149,17 +128,8 @@
                     const y = canvasHeight - barHeight;
                     
                     ctx.fillStyle = gradient;
-                    ctx.shadowBlur = 3;
-                    ctx.shadowColor = 'rgba(0,0,0,0.5)';
                     ctx.fillRect(x, y, w, barHeight);
-                    
-                    // Добавление эффекта свечения для высоких значений
-                    if (percent > 0.7) {
-                        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                        ctx.fillRect(x, y, w, Math.min(barHeight, 3));
-                    }
                 }
-                ctx.shadowBlur = 0;
                 
                 animationId = requestAnimationFrame(draw);
             }
@@ -273,24 +243,21 @@
                 
                 ctx.clearRect(0, 0, canvasWidth, canvasHeight);
                 
-                // Демо-визуализация также с 64 столбцами
-                const barCount = 64;
+                const barCount = 48;
                 const time = Date.now() * 0.005;
                 const barWidth = canvasWidth / barCount;
                 
                 for (let i = 0; i < barCount; i++) {
-                    let fakeHeight = 20 + Math.sin(time + i * 0.15) * 15;
-                    fakeHeight = Math.min(canvasHeight * 0.7, Math.max(5, fakeHeight));
+                    let fakeHeight = 15 + Math.sin(time + i * 0.15) * 12;
+                    fakeHeight = Math.min(canvasHeight * 0.6, Math.max(3, fakeHeight));
                     const x = i * barWidth;
                     const w = barWidth - 1;
                     const y = canvasHeight - fakeHeight;
                     
                     const hue = (i * 8 + time * 50) % 360;
                     ctx.fillStyle = `hsl(${hue}, 70%, 55%)`;
-                    ctx.shadowBlur = 2;
                     ctx.fillRect(x, y, w, fakeHeight);
                 }
-                ctx.shadowBlur = 0;
                 
                 requestAnimationFrame(drawDemo);
             }
