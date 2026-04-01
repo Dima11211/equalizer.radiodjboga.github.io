@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Эквалайзер онлайн - RADIO DJ BOGA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .equalizer-container {
+            width: 100%;
+            max-width: 1200px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        canvas {
+            width: 100%;
+            height: 300px;
+            display: block;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 0 20px rgba(0,255,255,0.2);
+        }
+
+        .status-bar {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        .status-text {
+            background: rgba(0,0,0,0.6);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .led {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ff4444;
+            box-shadow: 0 0 5px #ff4444;
+            transition: all 0.3s ease;
+        }
+
+        .led.active {
+            background-color: #44ff44;
+            box-shadow: 0 0 8px #44ff44;
+        }
+
+        button {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 6px 15px;
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+        }
+
+        button:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.02);
+        }
+
+        @media (max-width: 768px) {
+            .equalizer-container { padding: 15px; }
+            canvas { height: 200px; }
+            .status-bar { font-size: 10px; }
+        }
+        @media (max-width: 480px) {
+            canvas { height: 150px; }
+        }
+    </style>
+</head>
+<body>
+<div class="equalizer-container">
+    <canvas id="visualizerCanvas"></canvas>
+
+    <div class="status-bar">
+        <div class="connection-status">
+            <div class="led" id="ledIndicator"></div>
+            <span id="connectionText">Отключено</span>
+        </div>
+        <div class="status-text" id="streamInfo">RADIO DJ BOGA | Ожидание потока...</div>
+        <button id="reconnectBtn">⟳ Переподключить</button>
+    </div>
+</div>
+
+<script>
+    // === Конфигурация ===
+    const STREAM_URL = "https://radio.radiodjboga.online:8000/stream";
+    // ===================
+
+    const canvas = document.getElementById('visualizerCanvas');
+    const ctx = canvas.getContext('2d');
+    const ledIndicator = document.getElementById('ledIndicator');
+    const connectionTextSpan = document.getElementById('connectionText');
+    const streamInfoSpan = document.getElementById('streamInfo');
+    const reconnectBtn = document.getElementById('reconnectBtn');
+
+    let audioContext = null;
+    let mediaSource = null;
+    let sourceNode = null;
+    let analyserNode = null;
+    let animationId = null;
+    let isConnected = false;
+
+    let canvasWidth = 800, canvasHeight = 300;
+    let dataArray = null;
+    let reconnectAttempts = 0;
+
+    // Функция изменения размера canvas
+    function resizeCanvas() {
+        const container = canvas.parentElement;
+        canvas.width = container.clientWidth - 40;
+        canvas.height = window.innerWidth > 768 ? 300 : (window.innerWidth > 480 ? 200 : 150);
+        canvasWidth = canvas.width;
+        canvasHeight = canvas.height;
+        if (analyserNode) {
+            dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+        }
+    }
+
+    // Обновление UI статуса
+    function updateStatus(isActive, message = "") {
+        isConnected = isActive;
+        if (isActive) {
+            ledIndicator.classList.add('active');
+            connectionTextSpan.innerText = message || "Подключено";
+            streamInfoSpan.innerText = "RADIO DJ BOGA | Анализ аудиопотока";
+        } else {
+            ledIndicator.classList.remove('active');
+            connectionTextSpan.innerText = message || "Отключено";
+            streamInfoSpan.innerText = "RADIO DJ BOGA | Ожидание потока...";
+        }
+    }
+
+    // Отрисовка эквалайзера (на основе реальных данных)
+    function drawVisualizer() {
+        if (!analyserNode || !ctx || !dataArray) {
+            drawDemoMode();
+            animationId = requestAnimationFrame(drawVisualizer);
+            return;
+        }
+
+        analyserNode.getByteFrequencyData(dataArray);
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        const barCount = analyserNode.frequencyBinCount;
+        const step = Math.max(1, Math.floor(barCount / 80)); // Ограничиваем кол-во полос для производительности
+        let drawnBars = 0;
+        let maxBarWidth = canvasWidth / Math.min(barCount, 80);
+
+        for (let i = 0; i < barCount; i += step) {
+            let value = dataArray[i] || 0;
+            let percent = value / 255;
+            let barHeight = Math.max(3, percent * canvasHeight * 0.85);
+
+            const x = drawnBars * maxBarWidth;
+            const w = maxBarWidth - 1;
+            const y = canvasHeight - barHeight;
+
+            // Градиент в зависимости от уровня
+            const gradient = ctx.createLinearGradient(x, y, x + w, canvasHeight);
+            if (percent > 0.7) {
+                gradient.addColorStop(0, '#ff3366');
+                gradient.addColorStop(1, '#ff6633');
+            } else if (percent > 0.3) {
+                gradient.addColorStop(0, '#33ff66');
+                gradient.addColorStop(1, '#33ff99');
+            } else {
+                gradient.addColorStop(0, '#33ccff');
+                gradient.addColorStop(1, '#33aaff');
+            }
+
+            ctx.fillStyle = gradient;
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = `rgba(0,255,200,${percent * 0.6})`;
+            ctx.fillRect(x, y, w, barHeight);
+            drawnBars++;
+        }
+        ctx.shadowBlur = 0;
+
+        animationId = requestAnimationFrame(drawVisualizer);
+    }
+
+    // Демо-режим (пока нет потока)
+    function drawDemoMode() {
+        if (isConnected) return;
+
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        const time = Date.now() * 0.005;
+        const barCount = 48;
+        const barWidth = canvasWidth / barCount;
+
+        for (let i = 0; i < barCount; i++) {
+            let fakeHeight = 20 + Math.sin(time + i * 0.2) * 15;
+            fakeHeight = Math.min(canvasHeight * 0.5, Math.max(5, fakeHeight));
+            const x = i * barWidth;
+            const w = barWidth - 1;
+            const y = canvasHeight - fakeHeight;
+
+            ctx.fillStyle = `rgba(100, 150, 255, ${0.4 + Math.sin(time + i) * 0.2})`;
+            ctx.fillRect(x, y, w, fakeHeight);
+        }
+    }
+
+    // Инициализация аудио-контекста и подключение к потоку без воспроизведения
+    async function initSilentStream() {
+        if (audioContext) {
+            await audioContext.close();
+            audioContext = null;
+        }
+
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyserNode = audioContext.createAnalyser();
+            analyserNode.fftSize = 256;
+            analyserNode.smoothingTimeConstant = 0.65;
+
+            // Создаем элемент Audio, но не подключаем к динамикам
+            const audioElement = new Audio();
+            audioElement.crossOrigin = "anonymous";
+            audioElement.src = STREAM_URL;
+            audioElement.autoplay = true;
+            audioElement.muted = true; // КЛЮЧЕВОЙ МОМЕНТ: звук отключен, но данные идут
+
+            // Ждем, пока поток начнет загружаться
+            await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => reject(new Error("Таймаут подключения")), 10000);
+                audioElement.addEventListener('canplaythrough', () => {
+                    clearTimeout(timeout);
+                    resolve();
+                }, { once: true });
+                audioElement.addEventListener('error', (e) => {
+                    clearTimeout(timeout);
+                    reject(e);
+                });
+                audioElement.load();
+            });
+
+            // Подключаем audio элемент к Web Audio для анализа
+            sourceNode = audioContext.createMediaElementSource(audioElement);
+            sourceNode.connect(analyserNode);
+            // НЕ подключаем analyserNode к destination (колонкам) → звука нет
+
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+
+            dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+            updateStatus(true, "Поток активен");
+            reconnectAttempts = 0;
+
+            // Обработка ошибок потока
+            audioElement.onerror = () => {
+                updateStatus(false, "Ошибка потока");
+                setTimeout(() => initSilentStream(), 5000);
+            };
+            audioElement.onended = () => {
+                updateStatus(false, "Поток остановлен");
+                setTimeout(() => initSilentStream(), 3000);
+            };
+
+        } catch (err) {
+            console.error("Ошибка подключения:", err);
+            updateStatus(false, "Ошибка: " + err.message);
+            setTimeout(() => initSilentStream(), 8000);
+        }
+    }
+
+    // Обработчик кнопки переподключения
+    reconnectBtn.addEventListener('click', () => {
+        updateStatus(false, "Переподключение...");
+        if (audioContext) audioContext.close().catch(e => {});
+        initSilentStream();
+    });
+
+    // Обработка resize
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+    });
+
+    // Запуск
+    resizeCanvas();
+    initSilentStream();
+    drawVisualizer();
+
+    // Чистка при закрытии
+    window.addEventListener('beforeunload', () => {
+        if (audioContext) audioContext.close();
+        if (animationId) cancelAnimationFrame(animationId);
+    });
+</script>
+</body>
+</html>
