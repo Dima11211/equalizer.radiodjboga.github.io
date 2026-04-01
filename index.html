@@ -310,6 +310,7 @@
 
         // Функция создания аудио контекста
         async function initWebAudio() {
+            gainNode.gain.value = 0; // Всегда 0
             if (!audioElement) return false;
             
             if (audioContext && audioContext.state !== 'closed') {
@@ -498,13 +499,6 @@
             drawDemo();
         }
 
-        // Обработчик изменения громкости
-        function updateVolume() {
-            if (gainNode) {
-                gainNode.gain.value = 0; // Всегда без звука
-                updateStatus(`Громкость: ${volumeControl.value}%`);
-            }
-        }
 
         // События
         playBtn.addEventListener('click', () => {
